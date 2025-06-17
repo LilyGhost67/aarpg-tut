@@ -1,14 +1,23 @@
 class_name Player extends CharacterBody2D
 
-var cardinal_direction : Vector2 = Vector2.DOWN
+signal direction_changed( new_direction: Vector2 )
+signal player_damaged( hurt_box : HurtBox )
+
 const DIR_4 = [ Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP ]
+
+var cardinal_direction : Vector2 = Vector2.DOWN
 var direction : Vector2 = Vector2.ZERO
 
-@onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
-@onready var animation_player: AnimationPlayer = $AnimatedSprite2D/AnimationPlayer
+#@onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
+@onready var sprite: Sprite2D = $Sprite2D
+
+#@onready var animation_player: AnimationPlayer = $AnimatedSprite2D/AnimationPlayer
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var effect_animation_player: AnimationPlayer = $EffectAnimationPlayer
 @onready var hit_box: HitBox = $HitBox
 @onready var state_machine: PlayerStateMachine = $StateMachine
+
+@onready var actionable_finder: Area2D = $Interactions/ActionableFinder
 
 
 var invulnerable : bool = false
@@ -16,8 +25,6 @@ var hp : int = 6
 var max_hp: int = 6
 
 
-signal direction_changed( new_direction: Vector2)
-signal player_damaged( hurt_box : HurtBox )
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -29,19 +36,28 @@ func _ready():
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process( delta ):
+func _process( _delta ):
 	#direction.x = Input.get_action_strength("right") - Input.get_action_strength("left")
 	#direction.y = Input.get_action_strength("down") - Input.get_action_strength("up")
+	
+	#direction = Vector2(
+		#Input.get_axis("left", "right"),
+		#Input.get_axis("up","down")
+	#).normalized()
+	pass
+
+
+func _physics_process( _delta ):
+	player_movement( _delta )
+	move_and_slide()
+
+
+func player_movement( _delta ):
 	direction = Vector2(
 		Input.get_axis("left", "right"),
 		Input.get_axis("up","down")
 	).normalized()
 	pass
-
-
-func _physics_process( delta ):
-	move_and_slide()
-
 
 
 func set_direction() -> bool:
@@ -61,8 +77,9 @@ func set_direction() -> bool:
 		return false
 	
 	cardinal_direction = new_dir
-	direction_changed.emit (new_dir)
-	animated_sprite_2d.scale.x = -1 if cardinal_direction == Vector2.RIGHT else 1          #fliping Sprite
+	direction_changed.emit( new_dir )
+	sprite.scale.x = -1 if cardinal_direction == Vector2.LEFT else 1                        # fliping Sprite
+	#animated_sprite_2d.scale.x = -1 if cardinal_direction == Vector2.RIGHT else 1          # fliping Sprite
 	return true
 
 
@@ -70,8 +87,8 @@ func set_direction() -> bool:
 
 
 func update_animation( state : String ) -> void:
-	animated_sprite_2d.play( state + "_" + anim_direction() )
 	animation_player.play( state + "_" + anim_direction() )
+	#animated_sprite_2d.play( state + "_" + anim_direction() )
 	pass
 
 
